@@ -1,0 +1,3 @@
+[submodule "aws-mqtt-websockets"]
+	path = aws-mqtt-websockets
+	url = https://github.com/odelot/aws-mqtt-websockets.git
