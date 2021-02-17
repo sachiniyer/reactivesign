@@ -17,9 +17,9 @@ This is a customizable LED sign, which you can connect to AWS IOT to change colo
 4. A micro usb cable
 
 ## Hardware stuff
-1. Connect the led strip's data cable (green) to pin 2 of the esp8266.
-2. Connect the led strip's power cables directly to the power cables of the usb cable
-3. Insert the microusb cable into the esp8266. You may want to use a separate cable for uploading code, and just use this cable during production.
+1. Connect the led strip's data cable (green) to pin 2 of the esp8266. Add a resistor, because there is no pullup on ESPs.
+2. Solder the led strip's power cables directly to the power cables of the usb cable
+3. Insert the microusb cable into the esp8266. You may want to use a separate cable for uploading code, and just use this cable during production. This cable also does not have to have data transfer capabilities (so get rid of that cable that you used to try to upload code with and spent 4 hours trying to figure out why your CP210x driver was not working)
 
 ## AWS stuff
 
@@ -27,7 +27,7 @@ This is a customizable LED sign, which you can connect to AWS IOT to change colo
 I created an API gateway, which then connects through proxy to a lambda function. This is running through my personal website, which is a REST API. I created a separate endpoint for the lambda execution, but you don't have to.
 
 ### Lambda function
-The lambda function then just transfers the payload straight through AWS IOT with an out topic. The topic is called inTopic, because I'm lazy. I included the lambda function code as well in "./aws/" (also I'm trying to use more javascript in my life, so it is a bit badly written). The payload is hex values, because I did not want to send actual json. The hex values are converted in RGB on the device itself.
+The lambda function then just transfers the payload straight through AWS IOT with an out topic. The topic is called inTopic, because I'm lazy. I included the lambda function code as well in "./aws/" (also I'm trying to use more javascript in my life, so it is a bit badly written). The payload is hex values, because I did not want to send all 6 values seperately. The hex values are converted in RGB on the device itself.
 
 ### IOT Stuff
 Set up a generic iot device and download the certs that you automatically generate. Then you can just copy and paste those certs into the main sketch where it says to do so. You may want to do some of your own tests to make sure a connection is established before you start with the actual stuff (there is a sketch to test under "./aws/testconnection.ino").
