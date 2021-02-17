@@ -11,13 +11,10 @@ This is a customizable LED sign, which you can connect to AWS IOT to change colo
 
 ## Parts List
 
-LED strip (I used [this](https://www.amazon.com/BTF-Lighting-Individually-Addressable-Flexible-Lighting/dp/B075T7GQRP?pd_rd_w=l56PO&pf_rd_p=7a695a6b-3610-4583-9730-4d63d22b28b7&pf_rd_r=T0101DF08KD709APP1ZP&pd_rd_r=44d72d7c-5c85-461d-a2ee-c6e673e116b3&pd_rd_wg=QhGvn&pd_rd_i=B075T7GQRP&psc=1&ref_=pd_bap_d_rp_12_t))
-
-Around 120Ohm resistor between LED strip and ESP8266
-
-[ESP8266](https://www.amazon.com/HiLetgo-Internet-Development-Wireless-Micropython/dp/B081CSJV2V/ref=sr_1_1_sspa?dchild=1&keywords=esp8266&qid=1613470764&sr=8-1-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUEyMDU1Wk1ETFlaWjBVJmVuY3J5cHRlZElkPUEwNjMxMjQxMVdNMUEzQldKRkhIMCZlbmNyeXB0ZWRBZElkPUEwNTYyNjkzMU5WTEI1SjdJUTlDJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==)
-
-A micro usb cable
+1. LED strip (I used [this](https://www.amazon.com/BTF-Lighting-Individually-Addressable-Flexible-Lighting/dp/B075T7GQRP?pd_rd_w=l56PO&pf_rd_p=7a695a6b-3610-4583-9730-4d63d22b28b7&pf_rd_r=T0101DF08KD709APP1ZP&pd_rd_r=44d72d7c-5c85-461d-a2ee-c6e673e116b3&pd_rd_wg=QhGvn&pd_rd_i=B075T7GQRP&psc=1&ref_=pd_bap_d_rp_12_t))
+2. Around 120Ohm resistor between LED strip and ESP8266
+3. [ESP8266](https://www.amazon.com/HiLetgo-Internet-Development-Wireless-Micropython/dp/B081CSJV2V/ref=sr_1_1_sspa?dchild=1&keywords=esp8266&qid=1613470764&sr=8-1-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUEyMDU1Wk1ETFlaWjBVJmVuY3J5cHRlZElkPUEwNjMxMjQxMVdNMUEzQldKRkhIMCZlbmNyeXB0ZWRBZElkPUEwNTYyNjkzMU5WTEI1SjdJUTlDJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==)
+4. A micro usb cable
 
 ## Hardware stuff
 1. Connect the led strip's data cable (green) to pin 2 of the esp8266.
