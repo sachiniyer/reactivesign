@@ -4,19 +4,25 @@
 #include <PubSubClient.h>
 #include <FastLED.h>
 #include <EEPROM.h>
+// define data pin for led connection
 #define DATA_PIN     2
+// define amount of leds in strip
 #define NUM_LEDS    484
 CRGB leds[NUM_LEDS];
 extern "C" {
 #include "libb64/cdecode.h"
 }
+// make sure pin is correct
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 
+// wifi credentials
 const char* ssid = "";
 const char* password = "";
 
+// iot endpoint
 const char* awsEndpoint = ".iot.region.amazonaws.com";
 
+// certs for your device on iot
 // xxxxxxxxxx-certificate.pem.crt
 const String certificatePemCrt = "";
 // xxxxxxxxxx-private.pem.key
@@ -48,23 +54,34 @@ WiFiClientSecure wiFiClient;
 void msgReceived(char* topic, byte* payload, unsigned int len);
 PubSubClient pubSubClient(awsEndpoint, 8883, msgReceived, wiFiClient);
 
+// default values for name/back
 int name[] = {0,0,255};
 int back[] = {255, 0, 0};
+
+// get these numbers from findout.py
 int nameleds[] = {};
 int backleds[] = {};
+
+// This is for decoding the hex input
 char message[50];
 String hexname;
 String hexback;
+
+// These store the rgb values
 int full[6];
 int newfull[6];
 int ind = 0;
 
 void setup() {
+	// start serial
 	Serial.begin(115200);
 	Serial.println();
+	// delay for 4 seconds, because otherwise there are some problems with initial power distribution to the LEDs
 	delay(4000);
+	// add the leds
 	FastLED.addLeds<WS2812, DATA_PIN>(leds, NUM_LEDS);
 	FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
+	// read from stored values and update leds
 	EEPROM.begin(512);
 	readvals();
 	for (int i = 0; i < 3; i++) {
@@ -75,13 +92,16 @@ void setup() {
 	}
 	updateleds();
 
+	// connect to wifi
 	Serial.print("Connecting to "); Serial.print(ssid);
 	WiFi.begin(ssid, password);
 	WiFi.waitForConnectResult();
 	Serial.print(", WiFi connected, IP address: "); Serial.println(WiFi.localIP());
 
+	// sync time, because otherwise certs are flagged as invalid
 	setCurrentTime();
 
+	// add the certs
 	uint8_t binaryCert[certificatePemCrt.length() * 3 / 4];
 	int len = b64decode(certificatePemCrt, binaryCert);
 	wiFiClient.setCertificate(binaryCert, len);
@@ -95,10 +115,12 @@ void setup() {
 	wiFiClient.setCACert(binaryCA, len);
 }
 
+// main loop
 void loop() {
 	pubSubCheckConnect();
 }
 
+// writes array into eeprom
 void writearray(int address, int numbers[], int arraySize) {
 	int addressIndex = address;
 	for (int i = 0; i < arraySize; i++) {
@@ -107,135 +129,146 @@ void writearray(int address, int numbers[], int arraySize) {
 		addressIndex += 2;
 	}
 }
+
+// reads array from eeprom
 void readarray(int address, int numbers[], int arraySize) {
 	int addressIndex = address;
 	for (int i = 0; i < arraySize; i++) {
-			numbers[i] = (EEPROM.read(addressIndex) << 8) + EEPROM.read(addressIndex + 1);
-			addressIndex += 2;
-		}
+		numbers[i] = (EEPROM.read(addressIndex) << 8) + EEPROM.read(addressIndex + 1);
+		addressIndex += 2;
 	}
+}
 
-	void convert(String num, bool which) {
-		int finalnum[] = {0,0,0};
-		String nums[] = {num.substring(0,2), num.substring(2,4), num.substring(4,6)};
-		char numschar[] = {' ', ' '};
+// converts hex into rgb
+void convert(String num, bool which) {
+	int finalnum[] = {0,0,0};
+	String nums[] = {num.substring(0,2), num.substring(2,4), num.substring(4,6)};
+	char numschar[] = {' ', ' '};
+	for (int i = 0; i < 3; i++) {
+		numschar[0] = nums[i].charAt(0);
+		numschar[1] = nums[i].charAt(1);
+		finalnum[i] = (int) strtoul(numschar, 0, 16);
+	}
+	if (which) {
 		for (int i = 0; i < 3; i++) {
-			numschar[0] = nums[i].charAt(0);
-			numschar[1] = nums[i].charAt(1);
-			finalnum[i] = (int) strtoul(numschar, 0, 16);
-		}
-		if (which) {
-			for (int i = 0; i < 3; i++) {
-				name[i] = finalnum[i];
-			}
-		}
-		else {
-			for (int i = 0; i < 3; i++) {
-				back[i] = finalnum[i];
-			}
+			name[i] = finalnum[i];
 		}
 	}
-
-	void updateleds() {
-		for (int i = 0; i < 379; i++) {
-			leds[backleds[i]].setRGB(back[1], back[0], back[2]);
-		}
-		for (int i = 0; i < 116; i++) {
-			leds[nameleds[i]].setRGB(name[1], name[0], name[2]);
-		}
-		FastLED.show();
-	}
-
-	void writenewvals(int full[]) {
-		EEPROM.begin(512);
-		writearray(0,full,6);
-		EEPROM.commit();
-		Serial.println("THIS IS WRITE VALS");
-		for (int i = 0; i < 6; i++) {
-			Serial.print(full[i]);
-			Serial.print(" ");
-		}
-		Serial.println();
-	}
-
-	void readvals() {
-		int newarray[] = {0,0,0,0,0,0};
-		readarray(0, newarray, 6);
-		Serial.println("THIS IS READ VALS");
-		for (int i = 0; i < 6; i++) {
-			Serial.print(newarray[i]);
-			Serial.print(" ");
-		}
-		for (int i = 0; i < 6; i++) {
-			full[i] = newarray[i];
-		}
-		Serial.println();
-	}
-
-	void msgReceived(char* topic, byte* payload, unsigned int length) {
-		for (int i = 0; i < length; i++) {
-			message[i] = (char) payload[i];
-		}
-		hexname = "";
-		hexback = "";
-		for (int i = 14; i < 20; i++) {
-			hexback += message[i];
-		}
-		for (int i = 35; i < 41; i++) {
-			hexname += message[i];
-		}
-		convert(hexname, true);
-		convert(hexback, false);
-		Serial.println("THIS IS ORGINAL VALS");
+	else {
 		for (int i = 0; i < 3; i++) {
-			full[i] = name[i];
-			Serial.print(name[i]);
-			Serial.print(" ");
+			back[i] = finalnum[i];
 		}
-		for (int i = 0; i < 3; i++) {
-			full[i+3] = back[i];
-			Serial.print(back[i]);
-			Serial.print(" ");
-		}
-		Serial.println();
-		writenewvals(full);
-		readvals();
-		updateleds();
-		delay(5);
 	}
+}
 
-	void pubSubCheckConnect() {
-		if ( ! pubSubClient.connected()) {
-			Serial.print("PubSubClient connecting to: "); Serial.print(awsEndpoint);
-			while ( ! pubSubClient.connected()) {
-				Serial.print(".");
-				pubSubClient.connect("ESPthing");
-			}
-			Serial.println(" connected");
-			pubSubClient.subscribe("inTopic");
-		}
-		pubSubClient.loop();
+// updates leds, and displays them
+void updateleds() {
+	for (int i = 0; i < 379; i++) {
+		leds[backleds[i]].setRGB(back[1], back[0], back[2]);
 	}
-
-	int b64decode(String b64Text, uint8_t* output) {
-		base64_decodestate s;
-		base64_init_decodestate(&s);
-		int cnt = base64_decode_block(b64Text.c_str(), b64Text.length(), (char*)output, &s);
-		return cnt;
+	for (int i = 0; i < 116; i++) {
+		leds[nameleds[i]].setRGB(name[1], name[0], name[2]);
 	}
+	FastLED.show();
+}
 
-	void setCurrentTime() {
-		configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+// writes new values of rgb to eeprom
+void writenewvals(int full[]) {
+	EEPROM.begin(512);
+	writearray(0,full,6);
+	EEPROM.commit();
+	Serial.println("THIS IS WRITE VALS");
+	for (int i = 0; i < 6; i++) {
+		Serial.print(full[i]);
+		Serial.print(" ");
+	}
+	Serial.println();
+}
 
-		Serial.print("Waiting for NTP time sync: ");
-		time_t now = time(nullptr);
-		while (now < 8 * 3600 * 2) {
-			delay(500);
+// read values of rgb from eeprom
+void readvals() {
+	int newarray[] = {0,0,0,0,0,0};
+	readarray(0, newarray, 6);
+	Serial.println("THIS IS READ VALS");
+	for (int i = 0; i < 6; i++) {
+		Serial.print(newarray[i]);
+		Serial.print(" ");
+	}
+	for (int i = 0; i < 6; i++) {
+		full[i] = newarray[i];
+	}
+	Serial.println();
+}
+
+// when message is received, hex values are read, then converted to rgb, then displayed,
+// then written to eeprom, then read from eeprom to validate writing, and then updated
+void msgReceived(char* topic, byte* payload, unsigned int length) {
+	for (int i = 0; i < length; i++) {
+		message[i] = (char) payload[i];
+	}
+	hexname = "";
+	hexback = "";
+	for (int i = 14; i < 20; i++) {
+		hexback += message[i];
+	}
+	for (int i = 35; i < 41; i++) {
+		hexname += message[i];
+	}
+	convert(hexname, true);
+	convert(hexback, false);
+	Serial.println("THIS IS ORGINAL VALS");
+	for (int i = 0; i < 3; i++) {
+		full[i] = name[i];
+		Serial.print(name[i]);
+		Serial.print(" ");
+	}
+	for (int i = 0; i < 3; i++) {
+		full[i+3] = back[i];
+		Serial.print(back[i]);
+		Serial.print(" ");
+	}
+	Serial.println();
+	writenewvals(full);
+	readvals();
+	updateleds();
+	delay(5);
+}
+
+// function to connect to endpoint, will automatically refresh if disconnected (which happens a surprising amount)
+void pubSubCheckConnect() {
+	if ( ! pubSubClient.connected()) {
+		Serial.print("PubSubClient connecting to: "); Serial.print(awsEndpoint);
+		while ( ! pubSubClient.connected()) {
 			Serial.print(".");
-			now = time(nullptr);
+			pubSubClient.connect("ESPthing");
 		}
-		Serial.println("");
+		Serial.println(" connected");
+		pubSubClient.subscribe("inTopic");
+	}
+	pubSubClient.loop();
+}
+
+// decode base 64
+int b64decode(String b64Text, uint8_t* output) {
+	base64_decodestate s;
+	base64_init_decodestate(&s);
+	int cnt = base64_decode_block(b64Text.c_str(), b64Text.length(), (char*)output, &s);
+	return cnt;
+}
+
+// set current time (sometimes it gets stuck here, not sure how to fix other than reboot)
+void setCurrentTime() {
+	configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+
+	Serial.print("Waiting for NTP time sync: ");
+	time_t now = time(nullptr);
+	while (now < 8 * 3600 * 2) {
+		delay(500);
+		Serial.print(".");
+		now = time(nullptr);
+	}
+	Serial.println("");
 		struct tm timeinfo;
 		gmtime_r(&now, &timeinfo);
 		Serial.print("Current time: "); Serial.print(asctime(&timeinfo));
-	}
+}
