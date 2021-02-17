@@ -4,10 +4,10 @@ This is a customizable LED sign, which you can connect to AWS IOT to change colo
 
 ## Features
 
-MQTT connection with AWS IOT
-Carries color values over power cycles through virtual EEPROM
-Accounts for occasional reboots through EEPROM
-Automatic reconnection to AWS IOT
+1. MQTT connection with AWS IOT
+2. Carries color values over power cycles through virtual EEPROM
+3. Accounts for occasional reboots through EEPROM
+4. Automatic reconnection to AWS IOT
 
 ## Parts List
 
